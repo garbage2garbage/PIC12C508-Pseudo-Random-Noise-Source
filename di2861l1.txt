@@ -1,0 +1,53 @@
+di2861l1.txt
+;********************************************************************
+;
+; LISTING 1 - 12C508 ASSEMBLY CODE FOR PSEUDORANDOM-NOISE GENERATOR
+;
+; "Single IC forms pseudorandom-noise source," EDN, March 21, 2002, pg 98
+;
+;********************************************************************
+;********************************************************************
+;    Pseudorandom noise generator
+;*********************************************************************
+;     12/13/01 Stephen J. Ploss
+;
+;
+
+	LIST    p=12C508A
+
+#include "P12C508A.INC"
+
+ 	__CONFIG _CP_OFF & _WDT_OFF & _IntRC_OSC & _MCLRE_OFF
+ 
+	cblock	0x07		;Start of GP Regs
+
+	Lobyte			;Shift Registers
+	Midbyte			;       "
+	Hibyte			;       "
+
+	endc	
+
+start	movlw	0xC0		;No Wake on pin change, 
+				;No pull ups, ignore timer
+	option
+	movlw	0xFE		;Only GP0 as output
+	tris	GPIO
+
+	;Start the PN Generator
+main	movlw	0xFF		;Initialize shift reg's
+	movwf	Lobyte
+	movwf	Midbyte
+	movwf	Hibyte
+
+loop	rlf	Lobyte,F		;Perform shift
+	rlf	Midbyte,F
+	rlf	Hibyte,F
+	movlw	0x1A		;Polynomial
+	btfsc	STATUS,C		;Test Carry
+	xorwf	Lobyte,F		;XOR if set
+
+	movf	Hibyte,W		;Get Hibyte
+	movwf	GPIO		;Send LSB to output
+	goto	loop
+
+	END
